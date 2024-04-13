@@ -39,7 +39,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>-1</number>
       </property>
       <property name="tabsClosable">
        <bool>true</bool>
@@ -50,16 +50,6 @@
       <property name="tabBarAutoHide">
        <bool>false</bool>
       </property>
-      <widget class="QWidget" name="tab">
-       <attribute name="title">
-        <string>Tab 1</string>
-       </attribute>
-      </widget>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="title">
-        <string>Tab 2</string>
-       </attribute>
-      </widget>
      </widget>
     </item>
    </layout>
@@ -89,7 +79,7 @@
    </attribute>
    <addaction name="actVisible"/>
    <addaction name="separator"/>
-   <addaction name="actRunNow"/>
+   <addaction name="actToggle"/>
   </widget>
   <widget class="QDockWidget" name="dockWidgetAll">
    <property name="enabled">
@@ -285,12 +275,74 @@
     <enum>QAction::NoRole</enum>
    </property>
   </action>
-  <action name="actRunNow">
+  <action name="actToggle">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
    <property name="text">
-    <string>立即运行</string>
+    <string>后台调度中</string>
    </property>
    <property name="toolTip">
-    <string>立刻调度当前任务或者当前连接下所有任务，并刷新结果</string>
+    <string>切换后台调度任务</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="actDelConnect">
+   <property name="text">
+    <string>删除连接</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="actDelRule">
+   <property name="text">
+    <string>删除监控规则</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="actDelJob">
+   <property name="text">
+    <string>删除任务</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="actCheckJob">
+   <property name="text">
+    <string>查看任务</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="actEditConnect">
+   <property name="text">
+    <string>编辑连接</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="actEditRule">
+   <property name="text">
+    <string>编辑监控规则</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="actEditJob">
+   <property name="text">
+    <string>编辑任务</string>
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>

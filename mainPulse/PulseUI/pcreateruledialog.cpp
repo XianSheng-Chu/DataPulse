@@ -207,7 +207,7 @@ void PCreateRuleDialog::on_btnOK_clicked()
     }
 
     if(ui->editName->text().isEmpty()){
-        ui->labelStatus->setText("请填写人物名");
+        ui->labelStatus->setText("请填写任务名");
         return;
     }
 
@@ -255,7 +255,7 @@ void PCreateRuleDialog::on_btnOK_clicked()
     }
     emit putRuleId(m_ruleId);
     accept();
-
+    emit do_close();
 
 }
 
@@ -302,7 +302,7 @@ void PCreateRuleDialog::updateRule()
 
 void PCreateRuleDialog::on_btnClose_clicked()
 {
-    close();
+    emit do_close();
 }
 
 

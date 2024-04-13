@@ -8,6 +8,7 @@
 #include "pchartview.h"
 #include"pchart.h"
 #include<QSqlQueryModel>
+#include<QTimer>
 namespace Ui {
 class PJobWindow;
 }
@@ -33,10 +34,13 @@ private slots:
 
     void on_btnRunNow_clicked();
 
+    void on_btnRunNow_3_clicked();
+
 private:
     Ui::PJobWindow *ui;
 
     QSqlDatabase m_metaDB;
+    QSqlDatabase m_connectDB;
     qint64 m_jobId;
     qint64 m_ruleId;
     qint64 m_connectId;
@@ -57,7 +61,9 @@ private:
     QDateTime dataRangMin;
     QSqlQueryModel *m_butchModel;
     QSqlQueryModel *m_resultModel;
-
+    QTimer *timer= nullptr;
+    QList<QPair<QDateTime,QSqlRecord>> RealtimeDatas;
+    QHash<QString,QPair<QDateTime,QSqlRecord>> RealPrevious;
 private:
     void init();
     void initMapper();
@@ -70,9 +76,14 @@ private:
     void readData(QHash<QString,QVariant> &map,QSqlRecord record);
     void testChart();
 
+private slots:
+    void do_chartValue();
+    void on_btnSlide_clicked(bool checked);
+
 signals:
     void putJobid(qint64 ruleId);
     void runJob(quint64 jobId,quint64 connectId = -1,quint64 ruleId = -1);
+    void do_close();
 };
 
 #endif // PJOBWINDOW_H

@@ -8,6 +8,7 @@
 #include<QSplineSeries>
 #include<QValueAxis>
 #include<QDateTimeAxis>
+#include<QPair>
 PJobWindow::PJobWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::PJobWindow)
@@ -17,6 +18,8 @@ PJobWindow::PJobWindow(QWidget *parent)
     m_resultModel = new QSqlQueryModel(this);
     connect(this,&PJobWindow::runJob,JobThreadFactory::jobFactory,&JobThreadFactory::jobRunnbaleFactory);
     dataRangMin = QDateTime::currentDateTime().addDays(-1);
+    ui->chartView->setRenderHint(QPainter::RenderHint::Antialiasing);
+
 }
 
 PJobWindow::PJobWindow(qint64 jobId, QWidget *parent):PJobWindow(parent)
@@ -26,7 +29,6 @@ PJobWindow::PJobWindow(qint64 jobId, QWidget *parent):PJobWindow(parent)
     ui->comboBox->setVisible(false);
     ui->butBox->setVisible(false);
     init();
-    ui->chartView->setRenderHint(QPainter::RenderHint::Antialiasing);
 }
 
 PJobWindow::PJobWindow(bool creatFlag, qint64 id, QWidget *parent):PJobWindow(parent)
@@ -56,6 +58,9 @@ PJobWindow::PJobWindow(bool creatFlag, qint64 id, QWidget *parent):PJobWindow(pa
             m_RuleIdMap.insert(record.value("rule_name").toString(),record.value("rule_id").toInt());
             ui->comboBox->addItem(record.value("rule_name").toString());
         }
+        ui->groupBox->setVisible(false);
+        ui->tabWidget->setVisible(false);
+        ui->butBox->setLocale(QLocale("Chinese"));
     }else{
         m_jobId = id;
         m_creatFlag = creatFlag;
@@ -71,6 +76,8 @@ PJobWindow::~PJobWindow()
     //deleteCahrtViewList(cahrtViewList);
     //deleteCahrtList(cahrtList);
     QSqlDatabase::removeDatabase(m_metaDB.connectionName());
+    QSqlDatabase::removeDatabase(m_connectDB.connectionName());
+
     delete ui;
 }
 
@@ -98,6 +105,7 @@ void PJobWindow::init()
     ui->chkSuspend->setChecked(m_jobInfo.value("suspend_flag").toString()=="Y"?true:false);
     m_ruleId = m_jobInfo.value("job_rule_id").toInt();
     m_connectId = m_jobInfo.value("job_connection_id").toInt();
+    m_connectDB = pDataBaseSoure->getDatabaseConnect(m_jobInfo.value("job_connection_name").toString()+QString::number(m_connectId)+"-chart"+QString::number(QDateTime::currentDateTime().toMSecsSinceEpoch()),m_jobInfo.value("job_connection_name").toString());
     initRule(m_ruleId);
     initConnect(m_connectId);
     initMapper();
@@ -162,6 +170,9 @@ void PJobWindow::initButch()
         ui->dateTimeEdit->setDateTime(m_butchModel->index(0,1).data().toDateTime().addSecs(m_jobInfo.value("waiting_time_sec").toInt()));
     }
     //qDebug()<< query.lastError();
+    while(m_butchModel->canFetchMore()){
+        m_butchModel->fetchMore();
+    }
 }
 
 void PJobWindow::initResult(qint64 butchId)
@@ -278,6 +289,8 @@ void PJobWindow::initChart()
     m_chart =new PChart();
     m_chart->setBackgroundRoundness(0);
     ui->chartView->setChart(m_chart);
+    ui->combDataCol->clear();
+    ui->combFlagCol->clear();
     for (QString var : m_colMapper.keys()) {
         if(mapperType.value(var)=="number"){
             ui->combDataCol->addItem(m_colMapper.value(var));
@@ -285,6 +298,23 @@ void PJobWindow::initChart()
             ui->combFlagCol->addItem(m_colMapper.value(var));
         }
     }
+    QValueAxis* axisY = new QValueAxis;
+    axisY->setRange(0,10);
+    axisY->setTickCount(0);
+    QDateTimeAxis* axisX = new QDateTimeAxis;
+    axisX->setFormat("MM-dd hh:mm:ss");
+    axisX->setRange(QDateTime::currentDateTime().addSecs(-1000),QDateTime::currentDateTime());
+    axisY->setTickCount(0);
+    axisY->setLabelFormat("%.2f");
+    axisX->setTitleText("时间");
+    //axisX->setGridLineVisible(false);
+    //axisY->setGridLineVisible(false);
+
+    m_chart->axisX = axisX;
+    m_chart->axisY = axisY;
+    m_chart->addAxis(axisX,Qt::AlignBottom);
+    m_chart->addAxis(axisY,Qt::AlignLeft);
+    m_chart->setAnimationOptions(QChart::SeriesAnimations);
 }
 
 void PJobWindow::testChart()
@@ -342,6 +372,7 @@ void PJobWindow::testChart()
 
 
 
+
 const QHash<QString,QString> PJobWindow::mapperType = {{"c1","number"}, {"c2","number"}, {"c3","number"}, {"c4","number"}, {"c5","number"}, {"c6","number"}, {"c7","number"}, {"c8","number"}, {"c9","number"}, {"c10","number"}, {"c11","string"}, {"c12","string"}, {"c13","string"}, {"c14","string"}, {"c15","string"}, {"c16","string"}, {"c17","string"}, {"c18","string"}, {"c19","string"}, {"c20","string"}, {"c21","datetime"}, {"c22","datetime"}, {"c23","datetime"}, {"c24","datetime"}, {"c25","datetime"}};
 
 
@@ -355,6 +386,7 @@ const QHash<QString,QString> PJobWindow::mapperType = {{"c1","number"}, {"c2","n
 void PJobWindow::on_butBox_rejected()
 {
     ui->butBox->setVisible(false);
+    emit do_close();
 }
 
 
@@ -395,6 +427,7 @@ void PJobWindow::on_butBox_accepted()
         }else{
             qDebug()<<query.lastError();
         }
+        emit do_close();
     }else{
         str = "UPDATE pulse_job_monitoring set waiting_time_sec=:waiting_time_sec, suspend_flag=:suspend_flag, job_comment=:job_comment, update_date=:update_date, del_flag=:del_flag "
               " WHERE job_id=:job_id;";
@@ -411,6 +444,8 @@ void PJobWindow::on_butBox_accepted()
         }else{
             qDebug()<<query.lastError();
         }
+        ui->butBox->setVisible(false);
+        emit do_close();
     }
 }
 
@@ -443,15 +478,209 @@ void PJobWindow::on_combTimeRang_currentIndexChanged(int index)
 void PJobWindow::on_tabBatch_doubleClicked(const QModelIndex &index)
 {
     QModelIndex numIndex = m_butchModel->index(index.row(),0);
-    qint64 batchNum = index.data().toInt();
+    qint64 batchNum = numIndex.data().toInt();
     initResult(batchNum);
     qDebug()<<" index.row()"<<index.row();
     qDebug()<<" index.column()"<<index.column();
+    qDebug()<<" batchNum："<<batchNum;
 }
 
 
 void PJobWindow::on_btnRunNow_clicked()
 {
     emit runJob(m_jobId,m_connectId,m_ruleId);
+}
+
+
+void PJobWindow::on_btnRunNow_3_clicked()
+{
+
+    if(timer == nullptr){
+        timer = new QTimer(this);
+        connect(timer,&QTimer::timeout,this,&PJobWindow::do_chartValue);
+    }
+    QString chartTitle;
+    chartTitle+=(m_rule.value("rule_name").toString());
+    chartTitle+="-";
+    chartTitle+=ui->combDataCol->currentText();
+
+    if(ui->chkRate->isChecked()){
+        chartTitle+="/s";
+    }
+
+    m_chart->removeAllSeries();
+    m_chart->seriesList.clear();
+    m_chart->setTitle(chartTitle);
+
+    QSqlQuery query(m_metaDB);
+    QString str = "SELECT batch_number, connect_name, rule_name,  ";
+    for (QString var : m_colMapper.keys()) {
+        str+= var + " as \"" + m_colMapper.value(var) +"\",";
+    }
+    str+="start_time, end_time FROM pulse_job_result where  start_time > :start_time  and rule_id = :rule_id and  connect_id = :connect_id order by 1;";
+
+    query.prepare(str);
+    query.bindValue(":start_time",qMax(dataRangMin,m_RuleLastUpdate));
+    query.bindValue(":rule_id",m_ruleId);
+    query.bindValue(":connect_id",m_connectId);
+    query.exec();
+    qDebug()<<str;
+    if(query.lastError().isValid()){
+        qDebug()<< query.lastError();
+    }
+    bool linesFlag =  ui->combFlagCol->currentText().isEmpty();
+    QString currKey;
+    if(linesFlag) {
+        currKey = ui->combDataCol->currentText();
+    }
+
+    QHash<QString,QSqlRecord> previous;
+    m_chart->axisX->setMax(QDateTime::currentDateTime());
+
+    qreal rang = ui->spinRang->value();
+    m_chart->axisX->setMin(QDateTime::currentDateTime().addSecs(-1*rang));
+    qreal maxY=0,minY=0;
+    while(query.next()){
+        QSqlRecord record = query.record();
+        if(!linesFlag){
+            currKey = record.value(ui->combFlagCol->currentText()).toString();
+        }
+        qreal intervalMsec = 1000;
+
+        if(ui->chkRate->isChecked()){
+            if(previous.count()==0){
+                previous.insert(currKey,record);
+                continue;
+            }else{
+                if(record.value(ui->combDataCol->currentText()).isNull()) continue;
+                intervalMsec = previous.value(currKey).value("start_time").toDateTime().msecsTo(record.value("start_time").toDateTime());
+                if(intervalMsec<rang/40) continue;
+            }
+        }
+        intervalMsec/=1000;
+        if(record.value("start_time").toDateTime().addSecs(rang*0.1)<m_chart->axisX->min()) continue;
+
+        if(m_chart->seriesList.count(currKey)==0){
+            QLineSeries* line = new QSplineSeries;
+            m_chart->seriesList.insert(currKey,line);
+            m_chart->addSeries(line);
+            line->setName(currKey);
+            qDebug()<<"linesKey:"<<currKey;
+            qDebug()<<QString("m_chart->addSeries(line);");
+        }
+        qreal valueX = record.value("start_time").toDateTime().toMSecsSinceEpoch();
+        qreal valueY = 0;
+        if(ui->chkRate->isChecked()){
+            valueY = (record.value(ui->combDataCol->currentText()).toDouble()-previous.value(currKey).value(ui->combDataCol->currentText()).toDouble())/intervalMsec;
+            qDebug()<<"curr:"<<record.value(ui->combDataCol->currentText()).toDouble()<<" previos:"<<previous.value(currKey).value(ui->combDataCol->currentText()).toDouble();
+            previous.insert(currKey,record);
+        }else{
+            valueY = record.value(ui->combDataCol->currentText()).toDouble();
+        }
+        if(maxY==0&&minY==0){
+            maxY = valueY;
+            minY = valueY;
+        }
+        if(maxY<valueY){
+            maxY = valueY;
+        }
+        if(minY>valueY){
+            minY = valueY;
+        }
+
+        m_chart->seriesList.value(currKey)->append(valueX,valueY);
+
+
+    }
+    for (QLineSeries *line : m_chart->seriesList) {
+        line->attachAxis(m_chart->axisX);
+        line->attachAxis(m_chart->axisY);
+    }
+    m_chart->axisY->setTitleText(ui->combDataCol->currentText());
+    qreal minV =  minY-(maxY-minY)*0.1;
+    if(minV<0&minY>0){
+        minV = 0;
+    }
+    qDebug()<<"maxY:"<<maxY;
+    qDebug()<<"minY:"<<minY;
+
+    m_chart->axisY->setRange(minV,maxY+0.1*(maxY-minY));
+    ui->tabWidget->setCurrentIndex(2);
+    m_chart->legend()->setAlignment(Qt::AlignRight);
+
+    if(ui->btnSlide->isChecked()){
+        timer->setInterval(1000*ui->spinSampInterval->value());
+        timer->start();
+    }else{
+        timer->stop();
+    }
+}
+
+void PJobWindow::do_chartValue()
+{
+    if(!m_connectDB.isOpen()){
+        if(!m_connectDB.open()){
+            ui->statusbar->showMessage(QString(m_jobInfo.value("job_connection_name").toString()+"连接失败"+m_connectDB.lastError().text()));
+            timer->stop();
+            return;
+        }
+    }
+    QSqlQuery query(m_connectDB);
+    if(query.exec(m_rule.value("rule_script").toString())){
+        QDateTime currDateTime = QDateTime::currentDateTime();
+        ui->statusbar->showMessage(QString("上次实时状态刷新时间"+currDateTime.toString("yyyy/MM/dd hh24:mi:ss")));
+        while(query.next()){
+            QSqlRecord record = query.record();
+            RealtimeDatas.append(QPair<QDateTime,QSqlRecord>(currDateTime,record));
+            qreal valueY;
+            bool isFlag = !ui->combFlagCol->currentText().isEmpty();
+            QString curKey = isFlag?record.value(ui->combFlagCol->currentText()).toString():ui->combDataCol->currentText();
+            QLineSeries* line = m_chart->seriesList.value(curKey);
+            if(m_chart->seriesList.count(curKey) == 0) {
+                line = new QSplineSeries;
+                m_chart->seriesList.insert(curKey,line);
+                m_chart->addSeries(line);
+                line->setName(curKey);
+                line->attachAxis(m_chart->axisX);
+                line->attachAxis(m_chart->axisY);
+            }
+            if(ui->chkRate->isChecked()){
+                if(RealPrevious.count(curKey)==0) {
+                    RealPrevious.insert(curKey,QPair<QDateTime,QSqlRecord>(currDateTime,record));
+
+                    continue;
+                }
+                valueY = ((record.value(ui->combDataCol->currentText()).toDouble()-RealPrevious.value(curKey).second.value(ui->combDataCol->currentText()).toDouble())*1000)/RealPrevious.value(curKey).first.msecsTo(currDateTime);
+            }else{
+                valueY = record.value(ui->combDataCol->currentText()).toDouble();
+            }
+            RealPrevious.insert(curKey,QPair<QDateTime,QSqlRecord>(currDateTime,record));
+            if(timer->isActive()){
+                m_chart->axisX->setMax(QDateTime::currentDateTime());
+                qreal rang = ui->spinRang->value();
+                m_chart->axisX->setMin(QDateTime::currentDateTime().addSecs(-1*rang));
+                ui->statusbar->showMessage(QString("正在实时绘制"+QDateTime::currentDateTime().toString("yyyy/MM/dd hh24:mm:ss")));
+                if(valueY>m_chart->axisY->max()){
+                    m_chart->axisY->setMax(valueY+(m_chart->axisY->max()-m_chart->axisY->min())*0.2);
+                }else if(valueY<m_chart->axisY->min()){
+                    qreal minV =  valueY-(m_chart->axisY->max()-m_chart->axisY->min())*0.1;
+                    m_chart->axisY->setMin(minV<=0?0:minV);
+                }
+                line->append(currDateTime.toMSecsSinceEpoch(),valueY);
+            }
+        }
+    }else{
+        //ui->statusbar->showMessage(QString("实时sql执行失败"+QDateTime::currentDateTime().toString("yyyy/MM/dd hh24:mm:ss")));
+    }
+}
+
+void PJobWindow::on_btnSlide_clicked(bool checked)
+{
+    if(timer==nullptr) return;
+    if(checked){
+        timer->start();
+    }else{
+        timer->stop();
+    }
 }
 

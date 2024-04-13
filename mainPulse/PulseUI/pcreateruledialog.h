@@ -53,6 +53,7 @@ private:
 
 signals:
     void putRuleId(qint64 id);
+    void do_close();
 };
 
 class RuleTestThread : public QThread{

@@ -2,10 +2,11 @@
 #define PCHART_H
 
 
+
 #include <QValueAxis>
 #include <QChart>
 #include <QObject>
-#include<QAbstractAxis>
+#include<QSplineSeries>
 #include<QDateTimeAxis>
 class PChart : public QChart
 {
@@ -19,12 +20,12 @@ private:
     QValueAxis *axisY=nullptr;
     bool differentialFlag = false;//代表值坐标是否需要微分
     QString chartType;
-    QList<QPair<QString,QAbstractSeries*>> seriesList;
+    QHash<QString,QLineSeries*> seriesList;
 
 private:
     void removeAxis();
-    void removeSeries();
     void attachAllAxis();
+    void removeSeries();
 };
 
 #endif // PCHART_H

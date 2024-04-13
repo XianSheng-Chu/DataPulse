@@ -63,7 +63,10 @@ QSqlDatabase PDataBaseSoure::getDatabaseConnect(QString connectName, qint64 conn
     query.prepare(str);
     query.bindValue(":connect_id",connectId);
     query.exec(str);
-    if(query.next()){
+    bool next = query.next();
+    QSqlRecord record = query.record();
+    qDebug()<<query.lastError().text();
+    if(next){
         QSqlRecord record = query.record();
         QString ConnectName = connectName;
         QString hostName = record.value("host_name").toString();
@@ -74,6 +77,10 @@ QSqlDatabase PDataBaseSoure::getDatabaseConnect(QString connectName, qint64 conn
         QString password = record.value("connect_password").toString();
         QStringList options = record.value("connect_options").toString().split(";");
         return getDatabaseConnect(ConnectName,databaseType,hostName,port,databaseName,user,password,options);
+    }else{
+        qDebug()<<query.lastQuery();
+        qDebug()<<query.lastError();
+        qDebug()<<connectId;
     }
 }
 
