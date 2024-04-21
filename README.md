@@ -15,7 +15,7 @@ DataPulse采用的嵌入式数据库sqlite，其所有数据位于软件安装�
 
 连接导航将会存储所有的录入的数据库连接，以及该连接下具体有哪些有效的监控点
 
-![运行概览](picture\主窗口.png "运行概览")
+![运行概览](https://github.com/XianSheng-Chu/DataPulse/blob/v1.0.0/picture/%E4%B8%BB%E7%AA%97%E5%8F%A3.png "运行概览")
 
 
 
@@ -23,11 +23,11 @@ DataPulse采用的嵌入式数据库sqlite，其所有数据位于软件安装�
 
 规则导航内应对于不同连接类型可以增加不同的监控点，注意，这些监控点是以sql实现的，所以可以不限于监控数据库系统指标，如果你的工作需要记录业务数据，那么也可以尝试建立一个sql来实现它
 
-![运行概览](picture\规则导航.png "运行概览")
+![规则导航](https://github.com/XianSheng-Chu/DataPulse/blob/v1.0.0/picture/%E8%A7%84%E5%88%99%E5%AF%BC%E8%88%AA.png "运行概览")
 
 ### 趋势绘图
 
 对于一个绑定了连接的Job，你可以直接双击在连接导航内的规则名，此时可以根据该规则进行绘图--依照历史或者实时数据，可以进行直接绘制或者监控变化率（及以秒为单位进行积分，这在某些情况下比直接的数值曲线更有用）
 
-![运行概览](picture\趋势绘图.png "运行概览")
+![趋势图](https://github.com/XianSheng-Chu/DataPulse/blob/v1.0.0/picture/%E8%B6%8B%E5%8A%BF%E7%BB%98%E5%9B%BE.png "运行概览")
 
