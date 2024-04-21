@@ -12,7 +12,8 @@ class JobThreadFactory : public QObject
 {
     Q_OBJECT
 public:
-    const static JobThreadFactory *jobFactory;//JobThreadFactory在全局只有一个实例可用
+     static JobThreadFactory *jobFactory;//JobThreadFactory在全局只有一个实例可用
+     void init();
 private:
     QMap<qint64,QHash<QString,QVariant>> *connectInfos = nullptr;//所有连接
     QMap<qint64,QHash<QString,QVariant>> *rules = nullptr;//所有规则
@@ -20,9 +21,10 @@ private:
     QSqlDatabase mateDB;
     const QString JobFactoryDB = "FactoryDB";
     QMutex mutex;
+
 private:
     explicit JobThreadFactory(QObject *parent = nullptr);
-    void init();
+
     void initConnects();
     void initRules();
     void initMappers();

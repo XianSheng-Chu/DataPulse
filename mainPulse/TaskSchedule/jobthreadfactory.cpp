@@ -12,10 +12,10 @@
 JobThreadFactory::JobThreadFactory(QObject *parent)
     : QObject{parent}
 {
-    init();
+    qDebug()<<"JobThreadFactory";
 }
 
-void JobThreadFactory::init()
+ void JobThreadFactory::init()
 {
     QMutexLocker lock(&mutex);
     mateDB = pDataBaseSoure->getMateConnect(JobFactoryDB);
@@ -25,6 +25,7 @@ void JobThreadFactory::init()
     initMappers();
     qDebug()<<"test JobThreadFactory init";
     mateDB.close();
+    qDebug()<<"JobThreadFactory::init";
 }
 
 void JobThreadFactory::initConnects()
@@ -104,6 +105,7 @@ void JobThreadFactory::initMappers()
 
 void JobThreadFactory::jobRunnbaleFactory(quint64 jobId, quint64 connectId, quint64 ruleId)
 {
+    qDebug()<<"JobThreadFactory::jobRunnbaleFactory0";
     QMutexLocker lock(&mutex);
 
     if("Database"==connectInfos->value(connectId).value("connect_type").toString()){
@@ -197,5 +199,5 @@ void JobThreadFactory::do_updateRule(qint64 ruleId)
     }
 }
 
-const JobThreadFactory* JobThreadFactory::jobFactory = new JobThreadFactory;
+JobThreadFactory* JobThreadFactory::jobFactory = new JobThreadFactory;
 

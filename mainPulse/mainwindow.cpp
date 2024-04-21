@@ -14,14 +14,22 @@
 #include<PulseUI/pcreateconnectdialog.h>
 #include<QEvent>
 #include<QSqlError>
+#include <QSettings>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+    pDataBaseSoure->init();
+    JobThreadFactory::jobFactory->init();
     ui->setupUi(this);
+    QSettings settings("DataPulse");
+    bool dispatchSwitch = settings.value("DispatchSwitch",true).toBool();
+    settings.setValue("DispatchSwitch",dispatchSwitch);
     initThread();
     initUI();
     m_mateDB = pDataBaseSoure->getMateConnect("mainWindow");
+    qDebug()<<"MainWindow";
+
 }
 
 MainWindow::~MainWindow()
@@ -36,10 +44,19 @@ MainWindow::~MainWindow()
 void MainWindow::initThread()
 {
     cycleThread = new MonitoringCycleThread(this);
-    //cycleThread->start();//控制后台调度线程是否启用
+    QSettings settings("DataPulse");
+    bool dispatchSwitch = settings.value("DispatchSwitch",true).toBool();
+    if(dispatchSwitch){
+        cycleThread->start();//控制后台调度线程是否启用
+        qDebug()<<"cycleThread::start";
+        ui->actToggle->setText("后台调度中");
+    }else{
+        qDebug()<<"cycleThread::stop";
+        ui->actToggle->setText("后台调度停止");
+    }
     connect(cycleThread,&MonitoringCycleThread::runJob,this,&MainWindow::do_runJob);
     connect(cycleThread,&MonitoringCycleThread::runJob,JobThreadFactory::jobFactory,&JobThreadFactory::jobRunnbaleFactory);
-
+    qDebug()<<"MainWindow::initThread";
 }
 
 void MainWindow::initUI()
@@ -56,33 +73,35 @@ void MainWindow::initUI()
     toolBtnAdd->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     this->ui->toolBar->insertWidget(ui->actVisible,toolBtnAdd);
     ui->actVisible->setVisible(false);
-     PJobWindow * cr = new PJobWindow(false,1,this);
-     ui->tabWidgetMain->insertTab(0,cr,cr->windowTitle());
-     ui->tabWidgetMain->setCurrentWidget(cr);
-     connect(cr,&PJobWindow::putJobid,cycleThread,&MonitoringCycleThread::doUpdateJob);
-     connect(cr,&PJobWindow::putJobid,treeModelConnect,&PStandardItemModel::do_updateJob);
+     // PJobWindow * cr = new PJobWindow(false,1,this);
+     // ui->tabWidgetMain->insertTab(0,cr,cr->windowTitle());
+     // ui->tabWidgetMain->setCurrentWidget(cr);
+     // connect(cr,&PJobWindow::putJobid,cycleThread,&MonitoringCycleThread::doUpdateJob);
+     // connect(cr,&PJobWindow::putJobid,treeModelConnect,&PStandardItemModel::do_updateJob);
 
 
-     connect(this,&MainWindow::putJobid,cycleThread,&MonitoringCycleThread::doUpdateJob);
-     connect(this,&MainWindow::putJobid,treeModelConnect,&PStandardItemModel::do_updateJob);
-     connect(this,&MainWindow::putConnectId,JobThreadFactory::jobFactory,&JobThreadFactory::do_updateConnect);
-     connect(this,&MainWindow::putConnectId,treeModelConnect,&PStandardItemModel::do_updateConnect);
-     connect(this,&MainWindow::putRuleId,treeModelRule,&PStandardItemModel::do_updateRule);
-     connect(this,&MainWindow::putRuleId,JobThreadFactory::jobFactory,&JobThreadFactory::do_updateRule);
+    connect(this,&MainWindow::putJobid,cycleThread,&MonitoringCycleThread::doUpdateJob);
+    connect(this,&MainWindow::putJobid,treeModelConnect,&PStandardItemModel::do_updateJob);
+    connect(this,&MainWindow::putConnectId,JobThreadFactory::jobFactory,&JobThreadFactory::do_updateConnect);
+    connect(this,&MainWindow::putConnectId,treeModelConnect,&PStandardItemModel::do_updateConnect);
+    connect(this,&MainWindow::putRuleId,treeModelRule,&PStandardItemModel::do_updateRule);
+    connect(this,&MainWindow::putRuleId,JobThreadFactory::jobFactory,&JobThreadFactory::do_updateRule);
 
-     connect(this,&MainWindow::deleteJobid,cycleThread,&MonitoringCycleThread::doUpdateJob);
-     connect(this,&MainWindow::deleteConnectid,JobThreadFactory::jobFactory,&JobThreadFactory::do_updateConnect);
-     connect(this,&MainWindow::deleteRuleid,JobThreadFactory::jobFactory,&JobThreadFactory::do_updateRule);
+    connect(this,&MainWindow::deleteJobid,cycleThread,&MonitoringCycleThread::doUpdateJob);
+    connect(this,&MainWindow::deleteConnectid,JobThreadFactory::jobFactory,&JobThreadFactory::do_updateConnect);
+    connect(this,&MainWindow::deleteRuleid,JobThreadFactory::jobFactory,&JobThreadFactory::do_updateRule);
 
-     ui->treeViewConnect->installEventFilter(this);
-     ui->treeViewRule->installEventFilter(this);
+    ui->treeViewConnect->installEventFilter(this);
+    ui->treeViewRule->installEventFilter(this);
+    qDebug()<<"initUi";
 }
 
 
 
 void MainWindow::do_runJob(quint64 jobId, quint64 connectId, quint64 ruleId)
 {
-    QString str = QString::asprintf("现在正在执行job:%llu  connectId:%llu  ruleId:%llu  ",jobId,connectId,ruleId)+QDateTime::currentDateTime().toString("HH:mm:ss");
+    //QString str = QString::asprintf("现在正在执行job:%llu  connectId:%llu  ruleId:%llu  ",jobId,connectId,ruleId)+QDateTime::currentDateTime().toString("HH:mm:ss");
+    QString str = QString("最近一次执行时间：")+QDateTime::currentDateTime().toString("HH:mm:ss");
     ui->statusBar->showMessage(str);
 }
 
@@ -104,6 +123,7 @@ void MainWindow::initDock()
     //ui->treeViewRule->sortByColumn(0,Qt::AscendingOrder);
     ui->treeViewRule->setMouseTracking(true);
     ui->treeViewConnect->setMouseTracking(true);
+    qDebug()<<"initDock";
 }
 
 
@@ -129,9 +149,26 @@ void MainWindow::on_treeViewConnect_entered(const QModelIndex &index)
 
 void MainWindow::on_treeViewConnect_doubleClicked(const QModelIndex &index)
 {
-
+    if(index.isValid()){
+         ui->treeViewConnect->setCurrentIndex(index);
+        if(index.data(Qt::UserRole+2).toString()=="connect_id"){
+            on_actEditConnect_triggered();
+        }else if(index.data(Qt::UserRole+2).toString()=="job_id"){
+            on_actCheckJob_triggered();
+        }
+    }
 }
 
+
+void MainWindow::on_treeViewRule_doubleClicked(const QModelIndex &index)
+{
+    if(index.isValid()){
+        ui->treeViewConnect->setCurrentIndex(index);
+        if(index.data(Qt::UserRole+2).toString()=="rule_id"){
+            on_actEditRule_triggered();
+        }
+    }
+}
 
 void MainWindow::on_actAddConnect_triggered()
 {
@@ -146,10 +183,7 @@ void MainWindow::on_actAddConnect_triggered()
 }
 
 
-void MainWindow::on_treeViewRule_doubleClicked(const QModelIndex &index)
-{
 
-}
 
 
 void MainWindow::on_tabWidgetMain_tabCloseRequested(int index)
@@ -429,6 +463,22 @@ void MainWindow::on_actCheckJob_triggered()
         ui->tabWidgetMain->addTab(cr,cr->windowTitle());
         ui->tabWidgetMain->setCurrentWidget(cr);
         connect(cr,&PJobWindow::do_close,this,&MainWindow::on_closeTab);
+    }
+}
+
+
+void MainWindow::on_actToggle_triggered()
+{
+    QSettings settings("DataPulse");
+    bool dispatchSwitch = settings.value("DispatchSwitch",true).toBool();
+    settings.setValue("DispatchSwitch",!dispatchSwitch);
+    if(!dispatchSwitch){
+        cycleThread->start();//控制后台调度线程是否启用
+        ui->actToggle->setText("后台调度中");
+    }else{
+        cycleThread->stopThread();
+        ui->actToggle->setText("后台调度停止");
+        ui->statusBar->clearMessage();
     }
 }
 

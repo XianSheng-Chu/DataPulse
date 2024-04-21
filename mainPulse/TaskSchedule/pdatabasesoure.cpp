@@ -4,13 +4,14 @@
 #include<QSqlError>
 #include<QSqlQuery>
 #include<QSqlRecord>
+#include<QApplication>
 bool PDataBaseSoure::isInit = false;
 qint64 PDataBaseSoure::job_butch_pk = -1;
 PDataBaseSoure::PDataBaseSoure(QObject *parent)
     : QObject{parent}
 {
-    init();
-
+    isInit = true;
+    //init();
 }
 
 QSqlDatabase PDataBaseSoure::getMateConnect()
@@ -29,6 +30,7 @@ QSqlDatabase PDataBaseSoure::getDatabaseConnect(QString connectName,QString data
                                                 QString databaseName, QString user,QString password,
                                                 QStringList options)
 {
+    qDebug()<<driverMap->value(databaseType);
     QSqlDatabase connect = QSqlDatabase::addDatabase(driverMap->value(databaseType),connectName);
     connect.setHostName(hostName);
     connect.setPort(port);
@@ -111,15 +113,17 @@ QSqlDatabase PDataBaseSoure::getDatabaseConnect(QString connectName, QString nam
 
 void PDataBaseSoure::init()
 {
+
     mateName = "Mate";
-    QString DBFile = "D:/Software/Domes/DataPulseVerson/DataPulse/dataBase/pulse.db";
+    QString DBFile = QCoreApplication::applicationDirPath()+"/dataBase/pulse.db";
+    qDebug()<<DBFile;
     QSqlDatabase DB = QSqlDatabase::addDatabase("QSQLITE",mateName);
     DB.setDatabaseName(DBFile);
     if(!DB.open()){
         QString str = DB.lastError().text();
         QMessageBox::information(nullptr,"信息","数据库连接初始化失败"+DB.lastError().text());
     }
-    isInit = true;
+
 
     driverMap = new QHash<QString,QString>;
     driverMap->insert("MySql","QMYSQL");

@@ -17,7 +17,7 @@ PCreateConnectDialog::PCreateConnectDialog(QWidget *parent)
     mateDB = pDataBaseSoure->getMateConnect("PCreateConnectDialog"+QString::number(QDateTime::currentDateTime().toMSecsSinceEpoch()));
     if(!mateDB.isOpen())mateDB.open();
     data.insert("connect_type","Database");
-
+    ui->listWidget->setCurrentRow(0);
 }
 
 PCreateConnectDialog::PCreateConnectDialog(qint64 id, QWidget *parent):PCreateConnectDialog(parent)

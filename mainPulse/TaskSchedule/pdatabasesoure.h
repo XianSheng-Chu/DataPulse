@@ -18,11 +18,12 @@ public:
     qint64 getNextJob();
     QSqlDatabase getDatabaseConnect(QString connectName,qint64 connectId);
     QSqlDatabase getDatabaseConnect(QString connectName,QString name);
+    void init();//初始化类
 private:
     QString mateName;
     QSqlDatabase mateDB;
     QHash<QString,QString> *driverMap;//定义驱动映射
-    void init();//初始化类
+    //void init();//初始化类
     explicit PDataBaseSoure(QObject *parent = nullptr);
     static bool isInit;
     static qint64 job_butch_pk ;

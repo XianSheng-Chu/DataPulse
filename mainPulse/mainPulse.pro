@@ -56,10 +56,13 @@ FORMS += \
     PulseUI/pjobwindow.ui \
     mainwindow.ui \
 
-
+QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO += -Od
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    res.qrc
 
 

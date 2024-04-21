@@ -54,6 +54,8 @@ private slots:
 
     void on_actCheckJob_triggered();
 
+    void on_actToggle_triggered();
+
 signals:
     void putJobid(qint64 id);
     void putRuleId(qint64 id);

@@ -9,6 +9,7 @@
 #include"pdatabasesoure.h"
 void MonitoringCycleThread::init()
 {
+    qDebug()<<"MonitoringCycleThread::init0";
     if(jobMonitoring!=nullptr) delete jobMonitoring;
     jobMonitoring = new QVector<QPair<quint64,QMap<QString,QVariant>>>;
     QSqlDatabase mateDB = pDataBaseSoure->getMateConnect();
@@ -33,6 +34,7 @@ void MonitoringCycleThread::init()
         QPair<quint32,QMap<QString,QVariant>> row(jobId,jobInfo);
         jobMonitoring->push_back(row);
     }
+    qDebug()<<"MonitoringCycleThread::init";
 }
 
 void MonitoringCycleThread::cycleJob()
@@ -40,7 +42,6 @@ void MonitoringCycleThread::cycleJob()
 
     m_isStop = false;
     while (!m_isStop) {
-
         QDateTime nextSecond = QDateTime::currentDateTime().addSecs(1);
         for (int i = 0; i < jobMonitoring->count(); ++i) {
             QMutexLocker lock(&mutex);
@@ -55,7 +56,10 @@ void MonitoringCycleThread::cycleJob()
         }
         nextSecond.setMSecsSinceEpoch(nextSecond.toMSecsSinceEpoch() / 1000 * 1000);//设置为一秒的最开始
         int sleepMsec = nextSecond.toMSecsSinceEpoch() - QDateTime::currentDateTime().toMSecsSinceEpoch()-1;
+
         msleep(qMax(sleepMsec,1));//休眠线程直到下一秒开始
+
+
     }
 }
 

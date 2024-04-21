@@ -628,7 +628,7 @@ void PJobWindow::do_chartValue()
     QSqlQuery query(m_connectDB);
     if(query.exec(m_rule.value("rule_script").toString())){
         QDateTime currDateTime = QDateTime::currentDateTime();
-        ui->statusbar->showMessage(QString("上次实时状态刷新时间"+currDateTime.toString("yyyy/MM/dd hh24:mi:ss")));
+        ui->statusbar->showMessage(QString("上次实时状态刷新时间"+currDateTime.toString("yyyy/MM/dd hh:mi:ss")));
         while(query.next()){
             QSqlRecord record = query.record();
             RealtimeDatas.append(QPair<QDateTime,QSqlRecord>(currDateTime,record));
@@ -659,7 +659,7 @@ void PJobWindow::do_chartValue()
                 m_chart->axisX->setMax(QDateTime::currentDateTime());
                 qreal rang = ui->spinRang->value();
                 m_chart->axisX->setMin(QDateTime::currentDateTime().addSecs(-1*rang));
-                ui->statusbar->showMessage(QString("正在实时绘制"+QDateTime::currentDateTime().toString("yyyy/MM/dd hh24:mm:ss")));
+                ui->statusbar->showMessage(QString("正在实时绘制"+QDateTime::currentDateTime().toString("yyyy/MM/dd hh:mm:ss")));
                 if(valueY>m_chart->axisY->max()){
                     m_chart->axisY->setMax(valueY+(m_chart->axisY->max()-m_chart->axisY->min())*0.2);
                 }else if(valueY<m_chart->axisY->min()){

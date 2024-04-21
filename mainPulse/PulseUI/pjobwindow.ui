@@ -178,7 +178,7 @@
           <item>
            <widget class="QCheckBox" name="chkSuspend">
             <property name="toolTip">
-             <string>取消选择正常调度此任务</string>
+             <string>取消选择正常调度此任务(只影响单个任务)</string>
             </property>
             <property name="text">
              <string>暂停后台调度</string>
